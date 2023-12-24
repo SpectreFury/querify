@@ -48,6 +48,17 @@ const Dashboard = () => {
               <DialogHeader>
                 <DialogTitle>Add a new database</DialogTitle>
               </DialogHeader>
+              <form>
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="hostname"
+                    className="text-muted-foreground text-sm"
+                  >
+                    Hostname
+                  </label>
+                  <Input name="hostname" id="hostname" type="text" />
+                </div>
+              </form>
             </DialogContent>
           </Dialog>
         </CardFooter>

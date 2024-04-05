@@ -77,28 +77,30 @@ app.post("/save-database", async (req, res) => {
 
 app.post("/ask-query", async (req, res) => {
   try {
+    const PROMPT =
+      "You are going to be asked about SQL queries and you are supposed to only give the raw SQL query back and nothing else. Do not add ''' quotes around the query. Do not add new lines. \n";
     const database = await Database.findById(req.body.databaseId);
-
     if (!database) {
       throw new Error("No database found");
     }
 
     const sequelize = await sequelizeConnect(database.hostname);
 
-    const result = await model.generateContent(req.body.query);
+    const result = await model.generateContent(`${PROMPT} ${req.body.query}`);
     const response = await result.response;
     const query = response.text();
 
-    const [databaseRows, metadata] = await sequelize.query(
-      "SELECT * FROM playing_with_neon;"
-    );
+    console.log(query);
+
+    const [databaseRows, metadata] = await sequelize.query(query);
 
     await sequelize.close();
     console.log("The connection has been destroyed");
 
     res.json({
       status: "successful",
-      result: databaseRows,
+      queryResult: databaseRows,
+      metadata,
     });
   } catch (error) {
     res.json({

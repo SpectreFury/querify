@@ -1,6 +1,6 @@
 import React from "react";
-import Navigation from "./_components/Navigation";
 import Hero from "./_components/Hero";
+import Navigation from "./_components/Navigation";
 
 const Home = () => {
   return (

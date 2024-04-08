@@ -17,6 +17,10 @@ const DatabaseSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  databaseName: {
+    type: String,
+    required: true,
+  },
   dbType: {
     type: String,
     enum: ["postgres", "mysql", "mongodb"],

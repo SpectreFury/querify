@@ -8,11 +8,12 @@ import { useParams } from "next/navigation";
 
 import { toast } from "sonner";
 import { ButtonLoading } from "@/components/ButtonLoading";
+import ResponseTable from "./_components/ResponseTable";
 
 const DatabaseId = () => {
   const [query, setQuery] = useState("");
   const params = useParams();
-  const [response, setResponse] = useState("");
+  const [response, setResponse] = useState<any[]>();
 
   const [loading, setLoading] = useState(false);
 
@@ -35,9 +36,11 @@ const DatabaseId = () => {
     const result = await response.json();
 
     if (result.status === "successful") {
-      toast("Query is finished");
+      toast.success("Query is finished");
 
-      setResponse(JSON.stringify(result.queryResult));
+      setResponse(result.queryResult);
+    } else {
+      toast.error("Try again please");
     }
     setLoading(false);
   };
@@ -56,7 +59,7 @@ const DatabaseId = () => {
       <div className="text-lg font-medium text-muted-foreground mt-2">
         Response
       </div>
-      <div>{response}</div>
+      {response && <ResponseTable responseData={response} />}
     </div>
   );
 };

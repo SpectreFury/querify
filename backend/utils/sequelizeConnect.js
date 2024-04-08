@@ -1,8 +1,22 @@
 const { Sequelize } = require("sequelize");
 
-const sequelizeConnect = async (hostname) => {
+const sequelizeConnect = async (
+  hostname,
+  role,
+  password,
+  dbType,
+  databaseName
+) => {
   try {
-    const sequelize = new Sequelize(hostname);
+    const sequelize = new Sequelize(databaseName, role, password, {
+      host: hostname,
+      dialect: "postgres",
+      dialectOptions: {
+        ssl: {
+          require: true,
+        },
+      },
+    });
 
     await sequelize.authenticate();
     return sequelize;

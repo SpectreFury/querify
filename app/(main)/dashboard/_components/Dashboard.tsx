@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardTitle,
@@ -32,20 +32,33 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectTrigger,
+  SelectItem,
+  SelectLabel,
+  SelectValue,
+} from "@/components/ui/select";
+import { ButtonLoading } from "@/components/ButtonLoading";
 import { useDatabaseStore } from "@/store/database";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   name: z.string().min(2).max(100),
   role: z.string(),
   hostname: z.string().min(2),
   password: z.string().min(2).max(100),
+  databaseName: z.string().min(2).max(100),
   dbType: z.string(),
 });
 
 const Dashboard = () => {
-  const { databases, addDatabase, setDatabase } = useDatabaseStore();
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
+  const { databases, addDatabase, setDatabase } = useDatabaseStore();
   const router = useRouter();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -55,11 +68,13 @@ const Dashboard = () => {
       hostname: "",
       role: "",
       password: "",
-      dbType: "",
+      databaseName: "",
+      dbType: "postgres",
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setLoading(true);
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_SERVER_URL}/save-database`,
       {
@@ -72,6 +87,7 @@ const Dashboard = () => {
           hostname: values.hostname,
           role: values.role,
           password: values.password,
+          databaseName: values.databaseName,
           type: values.dbType,
         }),
       }
@@ -81,7 +97,13 @@ const Dashboard = () => {
 
     if (result.status === "successful") {
       addDatabase({ _id: result.id, name: values.name });
+      toast.success("Saved the database");
+    } else {
+      toast.error("An error occured");
     }
+
+    setLoading(false);
+    setOpen(false);
   };
 
   useEffect(() => {
@@ -112,7 +134,7 @@ const Dashboard = () => {
           <ScrollArea className="h-[200px]">
             {databases.map((database) => (
               <div
-                className="p-2 hover:bg-neutral-100 rounded flex justify-between items-center cursor-pointer"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded flex justify-between items-center cursor-pointer"
                 key={database._id}
                 onClick={() => router.push(`/databases/${database._id}`)}
               >
@@ -125,7 +147,7 @@ const Dashboard = () => {
           </ScrollArea>
         </CardContent>
         <CardFooter>
-          <Dialog>
+          <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>Add a new database</Button>
             </DialogTrigger>
@@ -196,20 +218,55 @@ const Dashboard = () => {
                   />
                   <FormField
                     control={form.control}
-                    name="dbType"
+                    name="databaseName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Database Type</FormLabel>
+                        <FormLabel>Database Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Database Type" {...field} />
+                          <Input
+                            type="text"
+                            placeholder="Database Name"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="self-start">
-                    Submit
-                  </Button>
+                  <FormField
+                    control={form.control}
+                    name="dbType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Database Type</FormLabel>
+                        <FormControl>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select the type of your database" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="postgres">Postgres</SelectItem>
+                              <SelectItem value="mysql">MySQL</SelectItem>
+                              <SelectItem value="mongodb">MongoDB</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {loading ? (
+                    <ButtonLoading />
+                  ) : (
+                    <Button type="submit" className="self-start">
+                      Submit
+                    </Button>
+                  )}
                 </form>
               </Form>
             </DialogContent>

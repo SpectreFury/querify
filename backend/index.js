@@ -2,16 +2,13 @@ require("dotenv").config();
 
 const express = require("express");
 const mongoose = require("mongoose");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-
 const cors = require("cors");
-
-const genAI = new GoogleGenerativeAI(process.env.GEMENI_API);
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 const Database = require("./models/Database");
 
 const { sequelizeConnect } = require("./utils/sequelizeConnect");
+const { generateQuery } = require("./utils/generateQuery");
+const { testConnection } = require("./utils/testConnection");
 
 mongoose.connect(process.env.MONGODB_URI);
 
@@ -44,6 +41,8 @@ app.get("/database", async (req, res) => {
 
 app.post("/save-database", async (req, res) => {
   try {
+    const { name, hostname, role, password, dbType, databaseName } = req.body;
+
     const alreadyExisting = await Database.find({
       hostname: req.body.hostname,
     });
@@ -54,12 +53,25 @@ app.post("/save-database", async (req, res) => {
       );
     }
 
+    const isValid = await testConnection(
+      hostname,
+      role,
+      password,
+      dbType,
+      databaseName
+    );
+
+    if (!isValid) {
+      throw new Error("The connection was not valid");
+    }
+
     const database = await Database.create({
-      name: req.body.name,
-      hostname: req.body.hostname,
-      role: req.body.role,
-      password: req.body.password,
-      dbType: req.body.dbType,
+      name,
+      hostname,
+      role,
+      password,
+      databaseName,
+      dbType,
     });
 
     res.json({
@@ -77,20 +89,19 @@ app.post("/save-database", async (req, res) => {
 
 app.post("/ask-query", async (req, res) => {
   try {
-    const PROMPT =
-      "You are going to be asked about SQL queries and you are supposed to only give the raw SQL query back and nothing else. Do not add ''' quotes around the query. Do not add new lines. \n";
     const database = await Database.findById(req.body.databaseId);
     if (!database) {
       throw new Error("No database found");
     }
 
-    const sequelize = await sequelizeConnect(database.hostname);
-
-    const result = await model.generateContent(`${PROMPT} ${req.body.query}`);
-    const response = await result.response;
-    const query = response.text();
-
-    console.log(query);
+    const sequelize = await sequelizeConnect(
+      database.hostname,
+      database.role,
+      database.password,
+      database.dbType,
+      database.databaseName
+    );
+    const query = await generateQuery(req.body.query);
 
     const [databaseRows, metadata] = await sequelize.query(query);
 

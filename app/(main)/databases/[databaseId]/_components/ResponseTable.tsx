@@ -13,6 +13,10 @@ type ResponseTableProps = {
 };
 
 const ResponseTable = ({ responseData }: ResponseTableProps) => {
+  console.log(responseData);
+
+  if (!responseData.length) return;
+
   const keys = Object.keys(responseData[0]);
 
   return (
